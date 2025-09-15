@@ -1,27 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import useWeatherApi from '../hooks/useWeatherApi';
-import type { CurrentWeather, ForecastResponse } from '../types/weather';
+import useCurrentWeather from '../hooks/useCurrentWeather';
+import useForecast from '../hooks/useForecast';
 
 const CityDetail: React.FC = () => {
   const { name } = useParams<{ name: string }>();
   const location = useLocation() as { state?: { label?: string } };
-  const { isLoading, error, fetchCurrentByCity, fetchForecastByCity, fetchForecastWithPastByCity } = useWeatherApi();
-  const [current, setCurrent] = useState<CurrentWeather | null>(null);
-  const [forecast, setForecast] = useState<ForecastResponse | null>(null);
-  const displayName = location.state?.label ?? forecast?.city?.name ?? name;
+  const currentQuery = useCurrentWeather(name);
+  const forecastQuery = useForecast(name, 10);
 
-  useEffect(() => {
-    if (!name) return;
-    (async () => {
-      const [c, f] = await Promise.all([
-        fetchCurrentByCity(name),
-        fetchForecastWithPastByCity(name, 10),
-      ]);
-      setCurrent(c);
-      setForecast(f);
-    })();
-  }, [name, fetchCurrentByCity, fetchForecastByCity, fetchForecastWithPastByCity]);
+  const isLoading = currentQuery.isLoading || forecastQuery.isLoading;
+  const error = (currentQuery.error as any)?.message || (forecastQuery.error as any)?.message || null;
+  const current = currentQuery.data ?? null;
+  const forecast = forecastQuery.data ?? null;
+  const displayName = location.state?.label ?? forecast?.city?.name ?? name;
 
   return (
     <section style={{ padding: '1rem', maxWidth: 900, margin: '0 auto' }}>

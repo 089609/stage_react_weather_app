@@ -221,7 +221,7 @@ export function useWeatherApi(): UseWeatherApiResult {
       setError(e.message ?? 'Onbekende fout');
       return null;
     }
-  }, [omUrlOverride, withRequest, geocodeCityToLatLon]);
+  }, [omUrlOverride, withRequest, geocodeCityToLatLon, resolveLabelFromOm]);
 
   const fetchForecastByCity = useCallback(async (city: string) => {
     try {
@@ -245,7 +245,7 @@ export function useWeatherApi(): UseWeatherApiResult {
       setError(e.message ?? 'Onbekende fout');
       return null;
     }
-  }, [omUrlOverride, withRequest, geocodeCityToLatLon]);
+  }, [omUrlOverride, withRequest, geocodeCityToLatLon, resolveLabelFromOm]);
 
   const fetchForecastWithPastByCity = useCallback(async (city: string, pastDays: number = 10) => {
     try {
@@ -268,7 +268,7 @@ export function useWeatherApi(): UseWeatherApiResult {
       setError(e.message ?? 'Onbekende fout');
       return null;
     }
-  }, [omUrlOverride, withRequest, geocodeCityToLatLon]);
+  }, [omUrlOverride, withRequest, geocodeCityToLatLon, resolveLabelFromOm]);
 
   return { isLoading, error, fetchCurrentByCity, fetchForecastByCity, fetchForecastWithPastByCity, suggestCities };
 }

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AutoComplete } from 'primereact/autocomplete';
+import { Button } from 'primereact/button';
 import useWeatherApi from '../hooks/useWeatherApi';
 
 interface Props {
@@ -50,53 +52,26 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="text"
+        <AutoComplete
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          suggestions={suggestions.map(s => ({ ...s, label: s.country ? `${s.name}, ${s.country}` : s.name }))}
+          completeMethod={async (e) => {
+            const q = String(e.query ?? '').trim();
+            if (q.length < 2) { setSuggestions([]); return; }
+            const res = await suggestCities(q);
+            setSuggestions(res);
+            setOpen(true);
+          }}
+          field="label"
+          onChange={(e) => setQuery(String(e.value ?? ''))}
+          onSelect={(e) => { const val = (e.value as any)?.name || String(e.value); setQuery(val); onSearch(val); setOpen(false); }}
           placeholder="Zoek stad..."
           aria-label="Zoek stad"
-          style={{ padding: 8, flex: 1, minWidth: 200 }}
-          onFocus={() => suggestions.length && setOpen(true)}
+          inputStyle={{ padding: 8, width: '100%' }}
+          style={{ flex: 1, minWidth: 200 }}
         />
-        <button type="submit" disabled={isLoading} style={{ padding: '8px 12px' }}>
-          {isLoading ? 'Zoeken...' : 'Zoeken'}
-        </button>
+        <Button type="submit" label={isLoading ? 'Zoeken...' : 'Zoeken'} disabled={!!isLoading} />
       </form>
-      {open && suggestions.length > 0 && (
-        <ul style={{
-          position: 'absolute',
-          zIndex: 10,
-          marginTop: 4,
-          listStyle: 'none',
-          padding: 0,
-          width: '100%',
-          maxHeight: 240,
-          overflowY: 'auto',
-          border: '1px solid #ddd',
-          background: 'white',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
-        }}>
-          {suggestions.map((s, idx) => (
-            <li key={`${s.name}-${idx}`}>
-              <button
-                type="button"
-                onClick={() => { setQuery(s.name); onSearch(`${s.name}`); setOpen(false); }}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  border: 'none',
-                  background: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                {s.name}{s.country ? `, ${s.country}` : ''}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 };
