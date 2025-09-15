@@ -15,7 +15,7 @@ function App() {
   const { isDark, toggleTheme } = usePrimeTheme();
   const items = [
     { label: 'Home', icon: 'pi pi-home', command: () => navigate('/') },
-    { label: 'About', icon: 'pi pi-info-circle', command: () => navigate('/about') }
+    { label: 'Info', icon: 'pi pi-info-circle', command: () => navigate('/about') }
   ];
   const start = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingInline: 8 }}>
