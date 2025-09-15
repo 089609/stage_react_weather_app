@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Menubar } from 'primereact/menubar';
 import Home from './pages/Home';
 import About from './pages/About';
 import CityDetail from './pages/CityDetail';
@@ -7,13 +8,15 @@ import Contact from './pages/Contact';
 import './App.css';
 
 function App() {
+  const navigate = useNavigate();
+  const items = [
+    { label: 'Home', icon: 'pi pi-home', command: () => navigate('/') },
+    { label: 'About', icon: 'pi pi-info-circle', command: () => navigate('/about') },
+    { label: 'Contact', icon: 'pi pi-envelope', command: () => navigate('/contact') },
+  ];
   return (
     <div className="App">
-      <nav style={{ padding: '1rem', display: 'flex', gap: '1rem' }}>
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
-        <Link to="/contact">Contact</Link>
-      </nav>
+      <Menubar model={items} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
