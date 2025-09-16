@@ -7,7 +7,10 @@ interface UseWeatherApiResult {
   fetchCurrentByCity: (city: string) => Promise<CurrentWeather | null>;
   fetchForecastByCity: (city: string) => Promise<ForecastResponse | null>;
   fetchForecastWithPastByCity: (city: string, pastDays?: number) => Promise<ForecastResponse | null>;
-  suggestCities: (query: string) => Promise<Array<{ name: string; country?: string; lat: number; lon: number }>>;
+  suggestCities: (
+    query: string,
+    countryFilter?: string
+  ) => Promise<Array<{ name: string; country?: string; lat: number; lon: number }>>;
 }
 
 export function useWeatherApi(): UseWeatherApiResult {
@@ -173,11 +176,18 @@ export function useWeatherApi(): UseWeatherApiResult {
     }
   }, [withRequest]);
 
-  const suggestCities = useCallback(async (query: string) => {
+  const suggestCities = useCallback(async (query: string, countryFilter?: string) => {
     const trimmed = query.trim();
     if (!trimmed) return [];
     try {
-      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=5&language=nl`;
+      const params = new URLSearchParams();
+      params.set('name', trimmed);
+      params.set('count', '10');
+      params.set('language', 'nl');
+      if (countryFilter && countryFilter.trim()) {
+        params.set('country', countryFilter.trim());
+      }
+      const url = `https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`;
       const res = await withRequest<any>(url);
       const results: any[] = res?.results ?? [];
       return results.map((r) => ({ name: r.name, country: r.country, lat: r.latitude, lon: r.longitude }));

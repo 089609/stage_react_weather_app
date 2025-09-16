@@ -3,6 +3,7 @@ import { AutoComplete } from 'primereact/autocomplete';
 import { Button } from 'primereact/button';
 import { Tooltip } from 'primereact/tooltip';
 import useWeatherApi from '../hooks/useWeatherApi';
+import { Dropdown } from 'primereact/dropdown';
 
 interface Props {
   onSearch: (city: string) => void;
@@ -12,6 +13,7 @@ interface Props {
 const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Array<{ name: string; country?: string; lat: number; lon: number }>>([]);
+  const [country, setCountry] = useState<string | null>(null);
   const { suggestCities } = useWeatherApi();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,7 +51,7 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
             completeMethod={async (e) => {
               const q = String(e.query ?? '').trim();
               if (q.length < 2) { setSuggestions([]); return; }
-              const res = await suggestCities(q);
+              const res = await suggestCities(q, country || undefined);
               setSuggestions(res);
             }}
             field="label"
@@ -66,6 +68,17 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
             </span>
           )}
         </div>
+        <Dropdown
+          value={country}
+          onChange={(e) => setCountry(String(e.value || ''))}
+          options={COUNTRIES}
+          optionLabel="label"
+          optionValue="code"
+          placeholder="Land"
+          showClear
+          style={{ width: 140 }}
+          aria-label="Filter op land"
+        />
         <Button type="submit" label={isLoading ? 'Zoeken...' : 'Zoeken'} icon="pi pi-send" rounded outlined disabled={!!isLoading} />
       </form>
     </div>
@@ -73,5 +86,18 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
 };
 
 export default SearchForm;
+
+// ISO 3166-1 alpha-2 codes supported by Open‑Meteo geocoding `country` param
+const COUNTRIES = [
+  { code: 'NL', label: 'Nederland' },
+  { code: 'BE', label: 'België' },
+  { code: 'DE', label: 'Duitsland' },
+  { code: 'FR', label: 'Frankrijk' },
+  { code: 'ES', label: 'Spanje' },
+  { code: 'IT', label: 'Italië' },
+  { code: 'GB', label: 'Verenigd Koninkrijk' },
+  { code: 'US', label: 'Verenigde Staten' },
+  { code: 'CA', label: 'Canada' },
+];
 
 
