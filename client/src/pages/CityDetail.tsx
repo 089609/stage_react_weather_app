@@ -7,6 +7,8 @@ import { Column } from 'primereact/column';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
+import { Chart } from 'primereact/chart';
+import { Timeline } from 'primereact/timeline';
 
 const CityDetail: React.FC = () => {
   const { name } = useParams<{ name: string }>();
@@ -47,15 +49,17 @@ const CityDetail: React.FC = () => {
         {forecast && (() => {
           const nowSec = Math.floor(Date.now() / 1000);
           const future = forecast.list.filter((i) => i.dt >= nowSec);
-          const byDay = new Map<string, { tempSum: number; humSum: number; windSum: number; count: number }>();
+          const byDay = new Map<string, { tempSum: number; humSum: number; windSum: number; count: number; max: number; min: number }>();
           for (const item of future) {
             const d = new Date(item.dt * 1000);
             const key = d.toISOString().slice(0, 10);
-            const entry = byDay.get(key) ?? { tempSum: 0, humSum: 0, windSum: 0, count: 0 };
+            const entry = byDay.get(key) ?? { tempSum: 0, humSum: 0, windSum: 0, count: 0, max: -Infinity, min: Infinity };
             entry.tempSum += item.main.temp;
             entry.humSum += typeof item.main.humidity === 'number' ? item.main.humidity : 0;
             entry.windSum += typeof item.wind?.speed === 'number' ? item.wind.speed : 0;
             entry.count += 1;
+            entry.max = Math.max(entry.max, item.main.temp_max ?? item.main.temp);
+            entry.min = Math.min(entry.min, item.main.temp_min ?? item.main.temp);
             byDay.set(key, entry);
           }
           const daily = Array.from(byDay.entries())
@@ -66,18 +70,87 @@ const CityDetail: React.FC = () => {
               avgTemp: v.count ? v.tempSum / v.count : 0,
               avgHum: v.count ? v.humSum / v.count : 0,
               avgWind: v.count ? v.windSum / v.count : 0,
+              maxTemp: v.max,
+              minTemp: v.min,
             }));
+
+          const labels = daily.map((d) => new Date(d.date).toLocaleDateString('nl-NL', { weekday: 'short' }));
+          const chartData = {
+            labels,
+            datasets: [
+              {
+                label: 'Gem. temperatuur (°C)'
+                , data: daily.map((d) => Math.round(d.avgTemp))
+                , borderColor: '#42A5F5'
+                , backgroundColor: 'rgba(66,165,245,0.2)'
+                , fill: true
+                , tension: 0.3
+              },
+              {
+                label: 'Min (°C)'
+                , data: daily.map((d) => Math.round(d.minTemp))
+                , borderColor: '#66BB6A'
+                , backgroundColor: 'rgba(102,187,106,0.2)'
+                , fill: false
+                , borderDash: [5, 5]
+                , tension: 0.3
+              },
+              {
+                label: 'Max (°C)'
+                , data: daily.map((d) => Math.round(d.maxTemp))
+                , borderColor: '#EF5350'
+                , backgroundColor: 'rgba(239,83,80,0.2)'
+                , fill: false
+                , borderDash: [5, 5]
+                , tension: 0.3
+              }
+            ]
+          } as any;
+
+          const chartOptions = {
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true },
+              tooltip: { enabled: true }
+            },
+            scales: {
+              y: { title: { display: true, text: '°C' } },
+              x: { title: { display: true, text: 'Dag' } }
+            }
+          } as any;
+
+          const events = daily.map((d) => ({
+            status: new Date(d.date).toLocaleDateString('nl-NL', { weekday: 'long', day: '2-digit', month: 'long' }),
+            date: `${Math.round(d.minTemp)}°C / ${Math.round(d.maxTemp)}°C`,
+            icon: d.maxTemp >= 25 ? 'pi pi-sun' : d.minTemp <= 0 ? 'pi pi-cloud' : 'pi pi-cloud'
+          }));
+
           const dateTemplate = (row: any) => new Date(row.date).toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
           const round = (n: number) => Math.round(n);
           return (
             <div style={{ marginTop: 16 }}>
-              <Card title="Gemiddelde temperatuur (volgende 5 dagen)">
+              <Card title="Trend (volgende 5 dagen)">
+                <div style={{ height: 260 }}>
+                  <Chart type="line" data={chartData} options={chartOptions} />
+                </div>
+              </Card>
+
+              <Card title="Gemiddelde waarden">
                 <DataTable value={daily} dataKey="date" responsiveLayout="scroll" size="small" emptyMessage="Geen gegevens">
                   <Column header="Datum" body={dateTemplate} sortable></Column>
                   <Column header="Gem. temperatuur (°C)" field="avgTemp" body={(r) => round(r.avgTemp)} sortable></Column>
                   <Column header="Gem. luchtvochtigheid (%)" field="avgHum" body={(r) => round(r.avgHum)} sortable></Column>
                   <Column header="Gem. wind (km/h)" field="avgWind" body={(r) => round(r.avgWind)} sortable></Column>
                 </DataTable>
+              </Card>
+
+              <Card title="Hoogtepunten">
+                <Timeline value={events} align="left" content={(e) => (
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{e.status}</div>
+                    <div style={{ color: 'var(--text-color-secondary)' }}>{e.date}</div>
+                  </div>
+                )} opposite={(e) => <i className={e.icon} />} />
               </Card>
             </div>
           );
