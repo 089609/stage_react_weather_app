@@ -17,6 +17,7 @@ export interface WeatherMain {
 export interface WindInfo {
   speed: number;
   deg: number;
+  gust?: number;
 }
 
 export interface CurrentWeather {
@@ -25,6 +26,13 @@ export interface CurrentWeather {
   weather: WeatherCondition[];
   main: WeatherMain;
   wind: WindInfo;
+  coord?: { lat: number; lon: number };
+  uvIndex?: number;
+  sunrise?: string; // ISO string
+  sunset?: string;  // ISO string
+  precipitation?: number; // mm
+  precipitationProbability?: number; // %
+  cloudCover?: number; // %
   sys?: {
     country?: string;
   };

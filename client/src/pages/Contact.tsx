@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { InputText } from 'primereact/inputtext';
@@ -24,7 +25,7 @@ type ContactFormValues = z.infer<typeof contactSchema>;
 const Contact: React.FC = () => {
   const toastRef = useRef<Toast | null>(null);
 
-  const { control, handleSubmit, reset, formState: { errors, isSubmitting, isValid }, } = useForm<ContactFormValues>({
+  const { control, handleSubmit, reset, formState: { errors, isValid }, } = useForm<ContactFormValues>({
     defaultValues: { name: '', email: '', message: '' },
     mode: 'onChange',
     reValidateMode: 'onChange',
@@ -34,21 +35,36 @@ const Contact: React.FC = () => {
     delayError: 200,
   });
 
-  const onSubmit = async (data: ContactFormValues) => {
-    try {
-      const response = await fetch('https://httpbin.org/post', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error('Verzenden mislukt');
-      }
+  const sendMessage = async (payload: ContactFormValues) => {
+    const response = await fetch('https://httpbin.org/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error('Verzenden mislukt');
+    }
+    return response.json();
+  };
+
+  const { mutate: submitMutation, isPending: isSubmittingMutation } = useMutation({
+    mutationFn: sendMessage,
+    onSuccess: () => {
       toastRef.current?.show({ severity: 'success', summary: 'Verzonden', detail: 'Bedankt! Je bericht is verzonden.', life: 2500 });
       reset();
-    } catch (error) {
+    },
+    onError: () => {
       toastRef.current?.show({ severity: 'error', summary: 'Fout', detail: 'Er ging iets mis. Probeer het opnieuw.', life: 3000 });
     }
+  });
+
+  const onSubmit = (data: ContactFormValues) => {
+    submitMutation(data);
+  };
+
+  const onClear = () => {
+    reset({ name: '', email: '', message: '' });
+    toastRef.current?.show({ severity: 'info', summary: 'Gewist', detail: 'Formulier is geleegd.', life: 1500 });
   };
 
   const inputStyle: React.CSSProperties = {
@@ -81,7 +97,7 @@ const Contact: React.FC = () => {
       }}>
         <p>Heb je vragen of feedback? Vul het formulier in en we nemen contact op.</p>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={isSubmitting} style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={isSubmittingMutation} style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={fieldStyle}>
             <label htmlFor="name" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>Naam</label>
             <div className="p-inputgroup">
@@ -167,9 +183,14 @@ const Contact: React.FC = () => {
             </div>
           </div>
 
-          <Button type="submit" rounded disabled={!isValid || isSubmitting} loading={isSubmitting} icon="pi pi-send" iconPos="left" className="p-button-raised">
-            Verstuur
-          </Button>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start' }}>
+            <Button type="submit" rounded disabled={!isValid || isSubmittingMutation} loading={isSubmittingMutation} icon="pi pi-send" iconPos="left" className="p-button-raised">
+              Verstuur
+            </Button>
+            <Button type="button" rounded severity="secondary" outlined icon="pi pi-eraser" onClick={onClear}>
+              Wissen
+            </Button>
+          </div>
         </form>
       </Card>
     </section>

@@ -39,19 +39,27 @@ const WeatherTable: React.FC<Props> = ({ items }) => {
   const descTemplate = (w: CurrentWeather) => {
     const text = (w.weather?.[0]?.description ?? '-');
     const capitalized = text.charAt(0).toUpperCase() + text.slice(1);
+    const t = Math.round(w.main.temp);
+    const fl = Math.round(w.main.feels_like);
+    const icon = fl <= 0 ? 'pi pi-snowflake' : t >= 25 ? 'pi pi-sun' : 'pi pi-cloud';
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <i className="pi pi-cloud" />
+        <i className={icon} />
         {capitalized}
       </span>
     );
+  };
+
+  const feelsLikeTemplate = (w: CurrentWeather) => {
+    const fl = Math.round(w.main.feels_like);
+    return <Tag value={`${fl}°C`} severity="secondary" icon="pi pi-gauge" />;
   };
 
   const windTemplate = (w: CurrentWeather) => {
     const speed = w.wind?.speed ?? 0;
     const label = `${speed} m/s`;
     const severity = speed < 5 ? 'success' : speed < 10 ? 'warning' : 'danger';
-    return <Tag value={label} severity={severity as any} icon="pi pi-send" />;
+    return <Tag value={label} severity={severity as any} icon="pi pi-compass" />;
   };
 
   const header = (
@@ -68,9 +76,10 @@ const WeatherTable: React.FC<Props> = ({ items }) => {
     <div style={{ marginTop: 12 }}>
       <DataTable value={items} dataKey="dt" responsiveLayout="scroll" size="small" paginator rows={5} rowsPerPageOptions={[5,10,20]} stripedRows showGridlines globalFilter={globalFilter} header={header}>
         <Column header="Stad" body={nameTemplate} sortable></Column>
-        <Column header="Temperatuur" body={tempTemplate} sortable></Column>
-        <Column header="Omschrijving" body={descTemplate}></Column>
-        <Column header="Wind" body={windTemplate} sortable></Column>
+        <Column header="Temp. (°C)" body={tempTemplate} sortable></Column>
+        <Column header="Gevoelstemp. (°C)" body={feelsLikeTemplate} sortable></Column>
+        <Column header="Weer" body={descTemplate}></Column>
+        <Column header="Wind (m/s)" body={windTemplate} sortable></Column>
       </DataTable>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import SearchForm from '../components/SearchForm';
+import SearchForm, { SearchFormHandle } from '../components/SearchForm';
 import WeatherTable from '../components/WeatherTable';
 import useWeatherApi from '../hooks/useWeatherApi';
 import type { CurrentWeather } from '../types/weather';
@@ -17,6 +17,7 @@ const Home: React.FC = () => {
   const [items, setItems] = useState<CurrentWeather[]>([]);
   const [lastQuery, setLastQuery] = useState<string>('');
   const toastRef = useRef<Toast | null>(null);
+  const searchFormRef = useRef<SearchFormHandle | null>(null);
 
   const mutation = useMutation({
     mutationFn: (city: string) => fetchCurrentByCity(city),
@@ -54,7 +55,11 @@ const Home: React.FC = () => {
           handleSearch(items[0].name);
         }
       }} />
-      <Button label="Wissen" icon="pi pi-trash" severity="secondary" outlined onClick={() => setItems([])} />
+      <Button label="Wissen" icon="pi pi-trash" severity="secondary" outlined onClick={() => {
+        setItems([]);
+        setLastQuery('');
+        searchFormRef.current?.clearAll();
+      }} />
     </div>
   );
 
@@ -64,7 +69,7 @@ const Home: React.FC = () => {
       <Card>
         <Toolbar start={left} end={right} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
-          <SearchForm onSearch={handleSearch} isLoading={isLoading || mutation.isPending} />
+          <SearchForm ref={searchFormRef} onSearch={handleSearch} isLoading={isLoading || mutation.isPending} />
           {(isLoading || mutation.isPending) && (
             <ProgressSpinner style={{ width: 28, height: 28 }} strokeWidth="6" />
           )}

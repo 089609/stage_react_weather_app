@@ -65,11 +65,18 @@ export function useWeatherApi(): UseWeatherApiResult {
     return {
       name: `${om.latitude ?? ''},${om.longitude ?? ''}`,
       dt: cur.time ? Math.floor(new Date(cur.time).getTime() / 1000) : Math.floor(Date.now() / 1000),
+      coord: { lat: om.latitude, lon: om.longitude },
+      uvIndex: typeof om?.daily?.uv_index_max?.[0] === 'number' ? om.daily.uv_index_max[0] : undefined,
+      sunrise: om?.daily?.sunrise?.[0] ?? undefined,
+      sunset: om?.daily?.sunset?.[0] ?? undefined,
+      precipitation: typeof cur?.precipitation === 'number' ? cur.precipitation : undefined,
+      precipitationProbability: typeof cur?.precipitation_probability === 'number' ? cur.precipitation_probability : undefined,
+      cloudCover: typeof cur?.cloud_cover === 'number' ? cur.cloud_cover : undefined,
       weather: [
         {
           id: 0,
-          main: 'Current',
-          description: 'Current conditions',
+          main: 'Huidig',
+          description: 'Huidig weer',
           icon: 'cloudy',
         },
       ],
@@ -83,7 +90,8 @@ export function useWeatherApi(): UseWeatherApiResult {
       },
       wind: {
         speed: typeof cur.wind_speed_10m === 'number' ? cur.wind_speed_10m : 0,
-        deg: 0,
+        deg: typeof cur.wind_direction_10m === 'number' ? cur.wind_direction_10m : 0,
+        gust: typeof cur.wind_gusts_10m === 'number' ? cur.wind_gusts_10m : undefined,
       },
       sys: {},
     };
@@ -105,7 +113,7 @@ export function useWeatherApi(): UseWeatherApiResult {
         humidity: typeof hums[idx] === 'number' ? hums[idx] : 0,
       },
       weather: [
-        { id: 0, main: 'Hourly', description: 'Hourly forecast', icon: 'cloudy' },
+        { id: 0, main: 'Uurlijks', description: 'Uurlijkse verwachting', icon: 'cloudy' },
       ],
       wind: { speed: typeof winds[idx] === 'number' ? winds[idx] : 0, deg: 0 },
       dt_txt: t,
@@ -119,7 +127,9 @@ export function useWeatherApi(): UseWeatherApiResult {
   const buildOmUrl = (lat: number, lon: number, pastDays?: number) =>
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     (pastDays ? `&past_days=${pastDays}` : '') +
-    `&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`;
+    `&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,precipitation_probability,cloud_cover` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability,precipitation,cloud_cover,wind_gusts_10m` +
+    `&daily=sunrise,sunset,uv_index_max&timezone=auto`;
 
   const tryParseCoords = (input: string): { lat: number; lon: number } | null => {
     const m = input.trim().match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);

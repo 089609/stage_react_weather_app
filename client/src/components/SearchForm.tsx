@@ -1,16 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { AutoComplete } from 'primereact/autocomplete';
 import { Button } from 'primereact/button';
 import { Tooltip } from 'primereact/tooltip';
 import useWeatherApi from '../hooks/useWeatherApi';
 import { Dropdown } from 'primereact/dropdown';
 
+export type SearchFormHandle = {
+  clearAll: () => void;
+};
+
 interface Props {
   onSearch: (city: string) => void;
   isLoading?: boolean;
 }
 
-const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
+const SearchForm = forwardRef<SearchFormHandle, Props>(({ onSearch, isLoading }, ref) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Array<{ name: string; country?: string; lat: number; lon: number }>>([]);
   const [country, setCountry] = useState<string | null>(null);
@@ -24,6 +28,14 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
   };
 
   const handleClear = () => setQuery('');
+
+  useImperativeHandle(ref, () => ({
+    clearAll: () => {
+      setQuery('');
+      setCountry(null);
+      setSuggestions([]);
+    },
+  }), []);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -70,7 +82,7 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
         </div>
         <Dropdown
           value={country}
-          onChange={(e) => setCountry(String(e.value || ''))}
+          onChange={(e) => setCountry((e.value as string | null) || null)}
           options={COUNTRIES}
           optionLabel="label"
           optionValue="code"
@@ -83,7 +95,7 @@ const SearchForm: React.FC<Props> = ({ onSearch, isLoading }) => {
       </form>
     </div>
   );
-};
+});
 
 export default SearchForm;
 
